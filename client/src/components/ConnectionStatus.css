@@ -1,0 +1,101 @@
+.connection-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Status Dot with pulse glow animations */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: pulse-glow 2s infinite ease-in-out;
+  opacity: 0;
+}
+
+/* Status: Connected / Live */
+.connection-status-badge.live {
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.05);
+  color: #166534;
+}
+
+.connection-status-badge.live .status-dot {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.connection-status-badge.live .status-dot::after {
+  background-color: #22c55e;
+  opacity: 0.4;
+}
+
+/* Status: Reconnecting */
+.connection-status-badge.reconnecting {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.05);
+  color: #9a3412;
+}
+
+.connection-status-badge.reconnecting .status-dot {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  animation: reconnect-blink 1s infinite steps(2, start);
+}
+
+.connection-status-badge.reconnecting .status-dot::after {
+  background-color: #f59e0b;
+  animation: pulse-glow 1s infinite ease-in-out;
+  opacity: 0.4;
+}
+
+/* Status: Offline */
+.connection-status-badge.offline {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.05);
+  color: #991b1b;
+}
+
+.connection-status-badge.offline .status-dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+/* Glow & Blink Animations */
+@keyframes pulse-glow {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes reconnect-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

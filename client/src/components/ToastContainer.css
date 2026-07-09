@@ -1,0 +1,91 @@
+/* Toast Notifications Stylesheet */
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03), 0 0 1px 0 rgba(0, 0, 0, 0.04);
+  max-width: 380px;
+  min-width: 280px;
+  box-sizing: border-box;
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s ease;
+}
+
+/* Toast Icons Colors */
+.toast-icon {
+  flex-shrink: 0;
+}
+
+.toast-icon.success { color: #10b981; }
+.toast-icon.error { color: #ef4444; }
+.toast-icon.delete { color: #f43f5e; }
+.toast-icon.login { color: #6366f1; }
+.toast-icon.logout { color: #f59e0b; }
+.toast-icon.upload { color: #3b82f6; }
+.toast-icon.save { color: #06b6d4; }
+.toast-icon.info { color: #64748b; }
+
+/* Left border highlights matching theme */
+.toast-item.success { border-left: 4px solid #10b981; }
+.toast-item.error { border-left: 4px solid #ef4444; }
+.toast-item.delete { border-left: 4px solid #f43f5e; }
+.toast-item.login { border-left: 4px solid #6366f1; }
+.toast-item.logout { border-left: 4px solid #f59e0b; }
+.toast-item.upload { border-left: 4px solid #3b82f6; }
+.toast-item.save { border-left: 4px solid #06b6d4; }
+.toast-item.info { border-left: 4px solid #64748b; }
+
+.toast-message {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #334155;
+  text-align: left;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.toast-close-btn:hover {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}

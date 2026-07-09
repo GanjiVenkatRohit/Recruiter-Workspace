@@ -1,0 +1,100 @@
+.upload-status-tracker-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 8px 12px;
+  font-size: 12px;
+  min-width: 220px;
+  color: var(--text-h);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-right: 12px;
+}
+
+.tracker-header {
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  color: var(--text);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.tracker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.tracker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-name {
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-pill {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stage-received { background: #e0f2fe; color: #0369a1; }
+.stage-validated { background: #dcfce7; color: #15803d; }
+.stage-queued { background: #fef9c3; color: #a16207; }
+.stage-processing { background: #f3e8ff; color: #6b21a8; }
+.stage-indexed { background: #fae8ff; color: #86198f; }
+.stage-completed { background: #dcfce7; color: #15803d; }
+.stage-failed { background: #fee2e2; color: #b91c1c; }
+
+.progress-bar-container {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.progress-fill.failed {
+  background: #ef4444;
+}
+
+.progress-fill.completed {
+  background: #22c55e;
+}
+
+.error-details {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: #ef4444;
+  font-size: 10px;
+  margin-top: 2px;
+  word-break: break-all;
+}

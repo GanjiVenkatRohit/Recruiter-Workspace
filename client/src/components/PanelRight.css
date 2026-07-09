@@ -1,0 +1,42 @@
+/* PanelRight Icon Hover Animation Styles */
+
+.animate-panel-right {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Slide the panel partition line to the left or right on hover */
+.animate-panel-right.animate-hover:hover .panel-line {
+  transform: translateX(-3px);
+}
+
+.animate-panel-right .panel-line {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+/* Slide the outer rectangle border outline slightly on hover */
+.animate-panel-right.animate-hover:hover .panel-rect {
+  stroke-width: 2.2px;
+}
+
+.animate-panel-right .panel-rect {
+  transition: stroke-width 0.2s ease;
+}
+
+/* AnimateIcon container wrappers */
+.animate-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-icon-wrapper.animate-hover:hover {
+  transform: scale(1.1);
+}
+
+.animate-icon-wrapper.animate-hover:active {
+  transform: scale(0.95);
+}
