@@ -85,9 +85,13 @@ async function seed() {
     process.exit(1);
   }
 
-  const pool = new Pool({ connectionString: config.databaseUrl });
+  const isSupabase = config.databaseUrl.includes('supabase.co') || config.databaseUrl.includes('supabase.com');
+  const pool = new Pool({
+    connectionString: config.databaseUrl,
+    ssl: isSupabase ? { rejectUnauthorized: false } : false,
+  });
   pool.on('connect', (client) => {
-    client.query('SET search_path TO resume, public');
+    client.query('SET search_path TO public');
   });
   const totalRows = 100000;
   const batchSize = 1000;

@@ -6,6 +6,7 @@ import * as connectivityStatus from '../utils/connectivityStatus';
 import * as offlineQueue from '../utils/offlineQueue';
 import { syncOfflineActions } from '../utils/syncManager';
 import ConflictResolutionModal from './ConflictResolutionModal';
+import ResumeModal from './ResumeModal';
 import wsClient from '../utils/webSocketClient';
 import { showToast } from '../utils/toast';
 import { 
@@ -58,6 +59,7 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
   const [conflictRecord, setConflictRecord] = useState(null);
   const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
 
   // Resume Parsing States
   const [parsedData, setParsedData] = useState(null);
@@ -352,7 +354,7 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
         method: 'DELETE',
       });
 
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         throw new Error('Failed to discard draft.');
       }
 
@@ -377,7 +379,7 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
       const res = await apiClient(`${config.apiBaseUrl}/api/candidates/${candidate.id}`, {
         method: 'DELETE',
       });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         throw new Error('Failed to delete candidate.');
       }
 
@@ -385,7 +387,7 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
       if (onSaveSuccess) {
         onSaveSuccess({ id: candidate.id, isDeleted: true });
       }
-      showToast('Candidate deleted successfully.', 'delete');
+      showToast(res.status === 404 ? 'Candidate was already deleted.' : 'Candidate deleted successfully.', 'delete');
       onClose();
     } catch (err) {
       setError(err.message || 'Error occurred deleting candidate.');
@@ -898,14 +900,39 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
                 <div className="resume-display-wrapper">
                   <div className="resume-box">
                     <span className="resume-filename">
+                      📄 {candidate.resume_s3_key.split('/').pop()}
+                    </span>
+                    <div className="resume-box-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                      <button
+                        type="button"
+                        className="view-resume-modal-btn"
+                        onClick={() => setShowResumeModal(true)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: '#2563eb',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '5px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s ease'
+                        }}
+                      >
+                        <Eye size={13} /> View Resume
+                      </button>
                       <a
                         href="#"
                         onClick={handleDownloadResume}
                         className="resume-download-link"
+                        style={{ fontSize: '12px', color: '#64748b', textDecoration: 'underline' }}
                       >
-                        Download Resume ({candidate.resume_s3_key.split('/').pop()})
+                        Download
                       </a>
-                    </span>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -933,6 +960,15 @@ export default function CandidateDetailPanel({ candidateId, onSaveSuccess, lastU
                 </div>
               )}
             </div>
+
+            {showResumeModal && (
+              <ResumeModal
+                candidateId={candidate.id}
+                candidateName={candidate.name}
+                resumeKey={candidate.resume_s3_key}
+                onClose={() => setShowResumeModal(false)}
+              />
+            )}
 
             {/* Save/Action Buttons */}
             <div className="details-actions">

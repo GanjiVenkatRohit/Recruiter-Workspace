@@ -865,66 +865,138 @@ app.put('/api/candidates/:id', requireAuth, async (req, res) => {
 });
 
 // GET /api/files/resume/:candidateId - Preview or download a candidate's resume
-app.get('/api/files/resume/:candidateId', requireAuth, async (req, res) => {
+// GET /api/files/resume/:candidateId & /api/resumes/download/:candidateId - Preview or download candidate resume
+const mammoth = require('mammoth');
+
+const handleResumePreview = async (req, res) => {
   const { candidateId } = req.params;
 
-  // Validate candidateId format
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(candidateId)) {
     return res.status(400).json({ error: 'Invalid candidate ID format' });
   }
 
   try {
-    const query = 'SELECT resume_s3_key FROM candidates WHERE id = $1';
+    const query = `
+      SELECT c.name, c.resume_s3_key, r.raw_text
+      FROM candidates c
+      LEFT JOIN resume_content r ON c.id = r.candidate_id
+      WHERE c.id = $1
+    `;
     const result = await db.query(query, [candidateId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Candidate not found.' });
     }
 
-    const resumePath = result.rows[0].resume_s3_key;
-    if (!resumePath) {
+    const candidate = result.rows[0];
+    const resumePath = candidate.resume_s3_key;
+    const rawText = candidate.raw_text;
+
+    if (!resumePath && !rawText) {
       return res.status(404).json({ error: 'Candidate does not have a resume uploaded.' });
     }
 
     const path = require('path');
     const fs = require('fs');
 
-    // Safe path resolution
-    let absolutePath = path.isAbsolute(resumePath) ? resumePath : path.resolve(__dirname, '..', resumePath);
-
-    // Also handle if path is stored relative to the project root instead of server
-    if (!fs.existsSync(absolutePath)) {
-      absolutePath = path.resolve(__dirname, '..', '..', resumePath);
+    let absolutePath = null;
+    if (resumePath) {
+      const p1 = path.isAbsolute(resumePath) ? resumePath : path.resolve(__dirname, '..', resumePath);
+      const p2 = path.resolve(__dirname, '..', '..', resumePath);
+      if (fs.existsSync(p1)) absolutePath = p1;
+      else if (fs.existsSync(p2)) absolutePath = p2;
     }
 
-    if (!fs.existsSync(absolutePath)) {
-      console.error(`[Download Endpoint] Resume file not found on disk: ${absolutePath}`);
-      return res.status(404).json({ error: 'Resume file not found on disk.' });
+    const isDownload = req.query.download === 'true';
+
+    if (absolutePath && fs.existsSync(absolutePath)) {
+      const ext = path.extname(absolutePath).toLowerCase();
+
+      // Convert DOCX/DOC files to styled HTML for seamless in-browser pop-up preview
+      if ((ext === '.docx' || ext === '.doc') && !isDownload) {
+        try {
+          const resultObj = await mammoth.convertToHtml({ path: absolutePath });
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8"/>
+              <title>${candidate.name} - Resume Preview</title>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 32px 40px; background: #ffffff; color: #1e293b; max-width: 860px; margin: 0 auto; line-height: 1.6; font-size: 15px; }
+                h1, h2, h3 { color: #0f172a; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; font-weight: 600; }
+                p { margin-bottom: 12px; }
+                a { color: #2563eb; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                ul, ol { padding-left: 24px; margin-bottom: 12px; }
+                li { margin-bottom: 4px; }
+              </style>
+            </head>
+            <body>
+              ${resultObj.value}
+            </body>
+            </html>
+          `;
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          return res.send(htmlContent);
+        } catch (docxErr) {
+          console.error('Error converting DOCX to HTML:', docxErr);
+        }
+      }
+
+      // PDF or direct file download streaming
+      res.setHeader('Content-Disposition', isDownload ? `attachment; filename="${path.basename(absolutePath)}"` : 'inline');
+      let contentType = 'application/octet-stream';
+      if (ext === '.pdf') {
+        contentType = 'application/pdf';
+      } else if (ext === '.docx') {
+        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else if (ext === '.doc') {
+        contentType = 'application/msword';
+      }
+      res.setHeader('Content-Type', contentType);
+      return res.sendFile(absolutePath);
     }
 
-    // Set header Content-Disposition to inline for browser previewing
-    res.setHeader('Content-Disposition', 'inline');
+    // Fallback: If physical file missing on disk, render raw_text from DB as a clean HTML preview page
+    if (rawText) {
+      const formattedText = rawText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br/>');
 
-    // Set correct Content-Type based on extension
-    const ext = path.extname(absolutePath).toLowerCase();
-    let contentType = 'application/octet-stream';
-    if (ext === '.pdf') {
-      contentType = 'application/pdf';
-    } else if (ext === '.docx') {
-      contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    } else if (ext === '.doc') {
-      contentType = 'application/msword';
+      const htmlFallback = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8"/>
+          <title>${candidate.name} - Resume Text Preview</title>
+          <style>
+            body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; padding: 32px; background: #ffffff; color: #1e293b; max-width: 860px; margin: 0 auto; line-height: 1.6; font-size: 14px; }
+            h2 { font-family: system-ui, sans-serif; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h2>${candidate.name} — Resume Content</h2>
+          <div>${formattedText}</div>
+        </body>
+        </html>
+      `;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(htmlFallback);
     }
-    res.setHeader('Content-Type', contentType);
 
-    // Stream the file using res.sendFile()
-    res.sendFile(absolutePath);
+    return res.status(404).json({ error: 'Resume file not found on disk.' });
   } catch (err) {
     console.error('Error fetching resume file:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-});
+};
+
+app.get('/api/files/resume/:candidateId', requireAuth, handleResumePreview);
+app.get('/api/resumes/download/:candidateId', requireAuth, handleResumePreview);
 
 // DELETE /api/candidates/:id - Delete candidate profile and all related items
 app.delete('/api/candidates/:id', requireAuth, async (req, res) => {
@@ -944,6 +1016,8 @@ app.delete('/api/candidates/:id', requireAuth, async (req, res) => {
     await client.query('DELETE FROM upload_sessions WHERE candidate_id = $1', [id]);
     await client.query('DELETE FROM resume_content WHERE candidate_id = $1', [id]);
     await client.query('DELETE FROM candidate_events WHERE candidate_id = $1', [id]);
+    await client.query('DELETE FROM offline_action_log WHERE candidate_id = $1', [id]);
+    await client.query('DELETE FROM pipeline_audit_log WHERE candidate_id = $1', [id]);
 
     // 2. Delete candidate
     const result = await client.query('DELETE FROM candidates WHERE id = $1 RETURNING id', [id]);

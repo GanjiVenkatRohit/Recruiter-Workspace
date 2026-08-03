@@ -194,21 +194,115 @@ function parseResume(rawText) {
     }
   }
 
-  // Method B — Calculate from work history dates
+  // Method B — Calculate from work history section or date ranges (excluding Education)
   if (expVal === null) {
-    const yearsMatches = rawText.match(/\b(19|20)\d{2}\b/g);
-    if (yearsMatches && yearsMatches.length > 0) {
-      const currentYear = new Date().getFullYear();
-      const validYears = yearsMatches
-        .map(y => parseInt(y, 10))
-        .filter(y => y >= 1990 && y <= currentYear);
-      if (validYears.length > 0) {
-        const earliest = Math.min(...validYears);
-        const span = currentYear - earliest;
-        if (span >= 0 && span <= 40) {
-          expVal = span;
-          expConfidence = 'medium';
-          expMethod = 'dates';
+    let workText = rawText;
+    const workHeaderRegex = /\b(Work Experience|Professional Experience|Employment History|Experience|Positions Held|Work History)\b/i;
+    const eduHeaderRegex = /\b(Education|Academic History|Academics|Qualifications|Degrees|Educational Background)\b/i;
+
+    const workMatch = workHeaderRegex.exec(rawText);
+    if (workMatch) {
+      const workStart = workMatch.index;
+      // If Education comes after Work Experience, cut off at Education section
+      const eduMatch = eduHeaderRegex.exec(rawText.slice(workStart));
+      if (eduMatch) {
+        workText = rawText.slice(workStart, workStart + eduMatch.index);
+      } else {
+        workText = rawText.slice(workStart);
+      }
+    } else {
+      // If no explicit work section header, strip out Education block if present
+      const eduMatch = eduHeaderRegex.exec(rawText);
+      if (eduMatch) {
+        const beforeEdu = rawText.slice(0, eduMatch.index);
+        const afterEdu = rawText.slice(eduMatch.index + 300);
+        workText = beforeEdu + ' ' + afterEdu;
+      }
+    }
+
+    // Match month-aware date ranges (e.g., June 2025 - Present, Dec 2025 - Present, 2018 - 2021)
+    const monthMap = {
+      jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+      may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+      oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+    };
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const currentTotalMonths = currentYear * 12 + currentMonth;
+
+    const rangeRegex = /(?:([a-z]{3,9})\.?\s*)?\b(19\d{2}|20\d{2})\s*[-–—to\s]+\s*(?:([a-z]{3,9})\.?\s*)?\b(19\d{2}|20\d{2}|present|current|now)\b/gi;
+    const intervals = [];
+    let rangeMatch;
+
+    while ((rangeMatch = rangeRegex.exec(workText)) !== null) {
+      const startMStr = rangeMatch[1] ? rangeMatch[1].toLowerCase() : null;
+      const startY = parseInt(rangeMatch[2], 10);
+      const endMStr = rangeMatch[3] ? rangeMatch[3].toLowerCase() : null;
+      const endStr = rangeMatch[4].toLowerCase();
+
+      const startM = (startMStr && monthMap[startMStr]) ? monthMap[startMStr] : 1;
+      const startTotalMonths = startY * 12 + startM;
+
+      let endTotalMonths;
+      if (endStr.includes('present') || endStr.includes('current') || endStr.includes('now')) {
+        endTotalMonths = currentTotalMonths;
+      } else {
+        const endY = parseInt(endStr, 10);
+        const endM = (endMStr && monthMap[endMStr]) ? monthMap[endMStr] : 12;
+        endTotalMonths = endY * 12 + endM;
+      }
+
+      if (startTotalMonths >= (1990 * 12) && endTotalMonths <= currentTotalMonths && endTotalMonths >= startTotalMonths) {
+        intervals.push([startTotalMonths, endTotalMonths]);
+      }
+    }
+
+    if (intervals.length > 0) {
+      // Sort intervals by start month
+      intervals.sort((a, b) => a[0] - b[0]);
+
+      // Merge overlapping work intervals to prevent double-counting concurrent roles/projects
+      const merged = [intervals[0]];
+      for (let i = 1; i < intervals.length; i++) {
+        const prev = merged[merged.length - 1];
+        const curr = intervals[i];
+        if (curr[0] <= prev[1]) {
+          prev[1] = Math.max(prev[1], curr[1]);
+        } else {
+          merged.push(curr);
+        }
+      }
+
+      let totalMonths = 0;
+      for (const [start, end] of merged) {
+        totalMonths += (end - start);
+      }
+
+      const totalYears = Math.round((totalMonths / 12) * 10) / 10;
+      if (totalYears > 0 && totalYears <= 40) {
+        expVal = totalYears;
+        expConfidence = 'high';
+        expMethod = 'date_ranges';
+      }
+    }
+
+    if (expVal === null) {
+      // Fallback: earliest year in work section only
+      const yearsMatches = workText.match(/\b(19|20)\d{2}\b/g);
+      if (yearsMatches && yearsMatches.length > 0) {
+        const validYears = yearsMatches
+          .map(y => parseInt(y, 10))
+          .filter(y => y >= 1990 && y <= currentYear);
+        if (validYears.length > 0) {
+          const earliest = Math.min(...validYears);
+          const span = currentYear - earliest;
+          if (span >= 0 && span <= 40) {
+            expVal = span;
+            expConfidence = 'medium';
+            expMethod = 'dates';
+          }
         }
       }
     }

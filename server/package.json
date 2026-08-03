@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
+    "db:recalculate-exp": "node scripts/recalculate_all_experience.js",
     "test": "jest"
   },
   "keywords": [],

@@ -3,8 +3,9 @@ import { useWebSocket } from '../contexts/WebSocketContext.jsx';
 import * as offlineQueue from '../utils/offlineQueue';
 import './CandidateList.css';
 
-import { Paperclip } from 'lucide-react';
+import { Paperclip, Eye } from 'lucide-react';
 import { Pagination } from './Pagination.jsx';
+import ResumeModal from './ResumeModal.jsx';
 
 const OVERSCAN_BUFFER = 8;
 const CONTAINER_HEIGHT = 500;
@@ -15,6 +16,7 @@ const CandidateRowItem = React.memo(function CandidateRowItem({
   candidate,
   isHighlighted,
   onClick,
+  onViewResume,
   searchQuery,
   rowHeight
 }) {
@@ -67,7 +69,31 @@ const CandidateRowItem = React.memo(function CandidateRowItem({
               </span>
             )}
             {candidate.resume_s3_key && (
-              <Paperclip size={12} style={{ color: '#64748b', flexShrink: 0 }} title="Resume attached" />
+              <button
+                type="button"
+                className="resume-quick-view-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewResume && onViewResume(candidate);
+                }}
+                title="Preview Resume in Pop-up"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  background: 'rgba(37, 99, 235, 0.08)',
+                  color: '#2563eb',
+                  border: '1px solid rgba(37, 99, 235, 0.25)',
+                  fontSize: '11px',
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  flexShrink: 0
+                }}
+              >
+                <Eye size={11} /> View Resume
+              </button>
             )}
             {isMatchedInResume && (
               <span className="match-tag" style={{
@@ -266,6 +292,7 @@ export default function CandidateList({ totalRows, fetchPage, onSelectCandidate,
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageCursors, setPageCursors] = useState({ 1: null });
+  const [previewCandidate, setPreviewCandidate] = useState(null);
 
   const [highlightedIds, setHighlightedIds] = useState(new Set());
   const wsClient = useWebSocket();
@@ -277,6 +304,10 @@ export default function CandidateList({ totalRows, fetchPage, onSelectCandidate,
       onSelectCandidate(id);
     }
   }, [onSelectCandidate]);
+
+  const handleViewResume = React.useCallback((cand) => {
+    setPreviewCandidate(cand);
+  }, []);
 
   // Listen for real-time candidate update events to trigger visual highlighting
   useEffect(() => {
@@ -499,6 +530,7 @@ export default function CandidateList({ totalRows, fetchPage, onSelectCandidate,
                   candidate={candidate}
                   isHighlighted={isHighlighted}
                   onClick={handleSelectCandidate}
+                  onViewResume={handleViewResume}
                   searchQuery={searchQuery}
                   rowHeight={rowHeight}
                 />
@@ -568,6 +600,15 @@ export default function CandidateList({ totalRows, fetchPage, onSelectCandidate,
           Showing <strong>{ids.length}</strong> of <strong>{totalRows.toLocaleString()}</strong> candidates
         </div>
       </div>
+
+      {previewCandidate && (
+        <ResumeModal
+          candidateId={previewCandidate.id}
+          candidateName={previewCandidate.name}
+          resumeKey={previewCandidate.resume_s3_key}
+          onClose={() => setPreviewCandidate(null)}
+        />
+      )}
     </div>
   );
 }

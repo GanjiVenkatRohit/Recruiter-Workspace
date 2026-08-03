@@ -8,7 +8,11 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const client = new Client({ connectionString });
+const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('supabase.com');
+const client = new Client({
+  connectionString,
+  ssl: isSupabase ? { rejectUnauthorized: false } : false,
+});
 
 async function run() {
   await client.connect();

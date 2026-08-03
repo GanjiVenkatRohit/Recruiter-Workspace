@@ -5,6 +5,7 @@ import config from '../config';
 import { setToken } from '../auth';
 import { apiClient } from '../apiClient';
 import { showToast } from '../utils/toast';
+import { ShaderBackground } from './ShaderBackground';
 import './AuthPages.css';
 
 export function LoginPage() {
@@ -51,74 +52,57 @@ export function LoginPage() {
 
   return (
     <div className="auth-page-container">
-      <div className="auth-card-split animate-scale-up">
-        {/* Left Side Form */}
-        <div className="auth-left-panel">
-          <div className="auth-header-centered">
-            <Users className="auth-logo-icon" size={42} />
-            <h1 className="auth-logo-title">Recruiter Workspace</h1>
-            <p className="auth-logo-subtitle">Resume Management</p>
+      <ShaderBackground className="auth-shader-canvas" />
+      <div className="auth-glass-card animate-scale-up">
+        <div className="auth-header-centered">
+          <div className="auth-logo-badge">
+            <Users className="auth-logo-icon" size={32} />
           </div>
-          
-          <p className="auth-welcome-text">Welcome back! Please login to your account.</p>
-
-          <form onSubmit={handleSubmit} className="auth-form-custom">
-            <div className="form-group-custom">
-              <label htmlFor="login-email">Email address</label>
-              <input
-                id="login-email"
-                type="email"
-                required
-                placeholder="recruiter@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group-custom">
-              <div className="label-row">
-                <label htmlFor="login-password">Password</label>
-                <a href="#forgot" className="forgot-link">Forgot password?</a>
-              </div>
-              <input
-                id="login-password"
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            {error && <div className="auth-error-msg">{error}</div>}
-
-            <button type="submit" className="auth-btn-purple" disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-
-          <div className="auth-footer-prompt">
-            Don't have an account? <Link to="/register">Sign up</Link>
-          </div>
+          <h1 className="auth-logo-title">Recruiter Workspace</h1>
+          <p className="auth-logo-subtitle">Resume Management</p>
         </div>
+        
+        <p className="auth-welcome-text">Welcome back! Please login to your account.</p>
 
-        {/* Right Side Visual Panel */}
-        <div className="auth-right-panel">
-          <div className="graphic-container">
-            <div className="resume-graphic-box">
-              <FileText className="graphic-file-icon" size={100} />
-              <Search className="graphic-search-icon" size={60} />
-              <Sparkles className="graphic-sparkle-1" size={24} />
-              <Sparkles className="graphic-sparkle-2" size={20} />
+        <form onSubmit={handleSubmit} className="auth-form-custom">
+          <div className="form-group-custom">
+            <label htmlFor="login-email">Email address</label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              placeholder="recruiter@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group-custom">
+            <div className="label-row">
+              <label htmlFor="login-password">Password</label>
+              <a href="#forgot" className="forgot-link">Forgot password?</a>
             </div>
+            <input
+              id="login-password"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+            />
           </div>
 
-          <div className="right-panel-info">
-            <h2>Find the best talent, faster</h2>
-            <p>Upload resumes, extract insights and build your dream team</p>
-          </div>
+          {error && <div className="auth-error-msg">{error}</div>}
+
+          <button type="submit" className="auth-btn-purple" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <div className="auth-footer-prompt">
+          Don't have an account? <Link to="/register">Sign up</Link>
         </div>
       </div>
     </div>
@@ -181,97 +165,80 @@ export function RegisterPage() {
 
   return (
     <div className="auth-page-container">
-      <div className="auth-card-split animate-scale-up">
-        {/* Left Side Form */}
-        <div className="auth-left-panel">
-          <div className="auth-header-centered">
-            <Users className="auth-logo-icon" size={42} />
-            <h1 className="auth-logo-title">Recruiter Workspace</h1>
-            <p className="auth-logo-subtitle">Resume Management</p>
+      <ShaderBackground className="auth-shader-canvas" />
+      <div className="auth-glass-card animate-scale-up">
+        <div className="auth-header-centered">
+          <div className="auth-logo-badge">
+            <Users className="auth-logo-icon" size={32} />
           </div>
-          
-          <p className="auth-welcome-text">Get started! Please create your account.</p>
-
-          <form onSubmit={handleSubmit} className="auth-form-custom">
-            <div className="form-group-custom tighter">
-              <label htmlFor="reg-name">Full name</label>
-              <input
-                id="reg-name"
-                type="text"
-                required
-                placeholder="Jane Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group-custom tighter">
-              <label htmlFor="reg-email">Email address</label>
-              <input
-                id="reg-email"
-                type="email"
-                required
-                placeholder="jane@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group-custom tighter">
-              <label htmlFor="reg-password">Password</label>
-              <input
-                id="reg-password"
-                type="password"
-                required
-                placeholder="•••••••• (min 8 chars)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group-custom tighter">
-              <label htmlFor="reg-confirm">Confirm Password</label>
-              <input
-                id="reg-confirm"
-                type="password"
-                required
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            {error && <div className="auth-error-msg">{error}</div>}
-
-            <button type="submit" className="auth-btn-purple" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </button>
-          </form>
-
-          <div className="auth-footer-prompt">
-            Already have an account? <Link to="/login">Sign in</Link>
-          </div>
+          <h1 className="auth-logo-title">Recruiter Workspace</h1>
+          <p className="auth-logo-subtitle">Resume Management</p>
         </div>
+        
+        <p className="auth-welcome-text">Get started! Please create your account.</p>
 
-        {/* Right Side Visual Panel */}
-        <div className="auth-right-panel">
-          <div className="graphic-container">
-            <div className="resume-graphic-box">
-              <FileText className="graphic-file-icon" size={100} />
-              <Search className="graphic-search-icon" size={60} />
-              <Sparkles className="graphic-sparkle-1" size={24} />
-              <Sparkles className="graphic-sparkle-2" size={20} />
-            </div>
+        <form onSubmit={handleSubmit} className="auth-form-custom">
+          <div className="form-group-custom tighter">
+            <label htmlFor="reg-name">Full name</label>
+            <input
+              id="reg-name"
+              type="text"
+              required
+              placeholder="Jane Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+            />
           </div>
 
-          <div className="right-panel-info">
-            <h2>Find the best talent, faster</h2>
-            <p>Upload resumes, extract insights and build your dream team</p>
+          <div className="form-group-custom tighter">
+            <label htmlFor="reg-email">Email address</label>
+            <input
+              id="reg-email"
+              type="email"
+              required
+              placeholder="jane@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
           </div>
+
+          <div className="form-group-custom tighter">
+            <label htmlFor="reg-password">Password</label>
+            <input
+              id="reg-password"
+              type="password"
+              required
+              placeholder="•••••••• (min 8 chars)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group-custom tighter">
+            <label htmlFor="reg-confirm">Confirm Password</label>
+            <input
+              id="reg-confirm"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          {error && <div className="auth-error-msg">{error}</div>}
+
+          <button type="submit" className="auth-btn-purple" disabled={isLoading}>
+            {isLoading ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
+
+        <div className="auth-footer-prompt">
+          Already have an account? <Link to="/login">Sign in</Link>
         </div>
       </div>
     </div>
