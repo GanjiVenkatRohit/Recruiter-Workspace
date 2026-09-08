@@ -44,7 +44,9 @@ export function LoginPage() {
       showToast('Logged in successfully!', 'login');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Server error occurred.');
+      const msg = err.message || 'Server error occurred.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +159,9 @@ export function RegisterPage() {
       showToast('Account registered successfully!', 'login');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Server error occurred.');
+      const msg = err.message || 'Server error occurred.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setIsLoading(false);
     }

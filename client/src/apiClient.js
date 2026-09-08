@@ -20,17 +20,17 @@ export function apiClient(url, options = {}) {
   return fetch(url, fetchOptions)
     .then((response) => {
       if (response.status === 401) {
-        clearToken();
-        // Redirect to login page
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
+        const isAuthEndpoint = url.includes('/api/auth/');
+        if (!isAuthEndpoint) {
+          clearToken();
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
       }
       return response;
     })
     .catch((error) => {
-      if (error.message === 'Unauthorized') {
-        throw error;
-      }
       throw error;
     });
 }

@@ -25,23 +25,28 @@ function parseResume(rawText) {
     };
   }
 
-  // 1. Full Name
+  // 1. Full Name Extraction Strategy
   let nameVal = null;
   let nameConfidence = 'low';
   let nameMethod = 'heuristic';
 
+  // Words to ignore as candidate names
+  const sectionKeywords = /^(resume|curriculum|vitae|cv|profile|biodata|summary|experience|work history|education|skills|contact|portfolio|page\s*\d+)$/i;
+
   try {
-    const first200 = rawText.slice(0, 200);
-    const doc = nlp(first200);
+    const first300 = rawText.slice(0, 300);
+    const doc = nlp(first300);
     const peopleList = doc.people().out('array');
 
     if (peopleList && peopleList.length > 0) {
-      // Find the first non-empty person entity
-      const foundName = peopleList[0].trim();
-      if (foundName && foundName.split(/\s+/).length >= 2 && foundName.split(/\s+/).length <= 5) {
-        nameVal = foundName;
-        nameConfidence = 'high';
-        nameMethod = 'compromise';
+      for (const p of peopleList) {
+        const cleanP = p.trim();
+        if (cleanP && !sectionKeywords.test(cleanP) && cleanP.length >= 2) {
+          nameVal = cleanP;
+          nameConfidence = 'high';
+          nameMethod = 'compromise';
+          break;
+        }
       }
     }
   } catch (err) {
@@ -49,19 +54,27 @@ function parseResume(rawText) {
   }
 
   if (!nameVal) {
-    // Fallback heuristic: check lines in the top portion
+    // Fallback heuristic: check lines in the top 8 lines
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-    for (let i = 0; i < Math.min(lines.length, 5); i++) {
-      const line = lines[i];
+    for (let i = 0; i < Math.min(lines.length, 8); i++) {
+      let line = lines[i];
+
+      // Remove job title suffix if attached with dash/pipe (e.g. "Rahul G - Data Engineer" -> "Rahul G")
+      if (line.includes('-') || line.includes('|')) {
+        const parts = line.split(/[-|]/);
+        if (parts[0].trim().split(/\s+/).length <= 4) {
+          line = parts[0].trim();
+        }
+      }
+
       const wordCount = line.split(/\s+/).length;
-      
       const isEmail = line.includes('@');
       const isPhone = /[\d\-+()]{7,}/.test(line);
       const isUrl = /github\.com|linkedin\.com|http|www\./i.test(line);
-      const isAllUpper = line === line.toUpperCase() && line.length > 3;
+      const isHeaderWord = sectionKeywords.test(line);
       const hasDigits = /\d/.test(line);
 
-      if (wordCount >= 2 && wordCount <= 5 && !isEmail && !isPhone && !isUrl && !isAllUpper && !hasDigits) {
+      if (wordCount >= 1 && wordCount <= 4 && !isEmail && !isPhone && !isUrl && !isHeaderWord && !hasDigits) {
         nameVal = line;
         nameConfidence = 'medium';
         nameMethod = 'heuristic';
@@ -70,7 +83,21 @@ function parseResume(rawText) {
     }
   }
 
-  // Clean Name
+  // Fallback 2: Extract name from email address if available (e.g. rahul.mehta@gmail.com -> Rahul Mehta)
+  if (!nameVal) {
+    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) {
+      const emailPrefix = emailMatch[0].split('@')[0];
+      const parts = emailPrefix.split(/[._-]/).filter(p => p.length > 1 && !/^\d+$/.test(p));
+      if (parts.length > 0) {
+        nameVal = parts.join(' ');
+        nameConfidence = 'low';
+        nameMethod = 'email_fallback';
+      }
+    }
+  }
+
+  // Clean and format Name
   if (nameVal) {
     nameVal = nameVal.trim()
       .replace(/[^a-zA-Z\s.-]/g, '')

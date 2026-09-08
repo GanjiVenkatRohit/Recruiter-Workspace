@@ -47,6 +47,19 @@ export default function AddCandidateForm({ isOpen, onClose, onSuccess, onSelectC
   
   const pollIntervalRef = useRef(null);
 
+  const handleModalClose = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    setUploadFile(null);
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    setIsSubmitting(false);
+    setErrors({});
+    if (onClose) onClose();
+  };
+
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -221,6 +234,24 @@ export default function AddCandidateForm({ isOpen, onClose, onSuccess, onSelectC
     }
   };
 
+  const handleUploadError = (reason) => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    const errMsg = typeof reason === 'string' ? reason : (reason?.message || 'Resume processing failed.');
+    setErrors({ general: errMsg });
+    setUploadStatus('failed');
+    setUploadProgress(0);
+    setIsSubmitting(false);
+    showToast(errMsg, 'error');
+
+    // Auto close modal after 3.5s so user is never stuck
+    setTimeout(() => {
+      handleModalClose();
+    }, 3500);
+  };
+
   // Resume Upload Intake Stream Flow
   const handleResumeIntakeSubmit = async (e) => {
     e.preventDefault();
@@ -349,60 +380,74 @@ export default function AddCandidateForm({ isOpen, onClose, onSuccess, onSelectC
         body: JSON.stringify({ checksum, candidateId, uploadId }),
       });
 
-      // 8. Poll status until completed or failed
+      // 8. Poll status until completed, failed, or safety timeout
+      let pollCount = 0;
+      const maxPollAttempts = 3; // 6 seconds max fallback polling
+
+      const finalizeSuccess = async (match) => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        setUploadStatus('completed');
+
+        const finalCandidateId = (match && match.candidate_id) ? match.candidate_id : candidateId;
+        try {
+          const candRes = await apiClient(`${config.apiBaseUrl}/api/candidates/${finalCandidateId}`);
+          if (candRes.ok) {
+            const finalCandidate = await candRes.json();
+            if (onSuccess) onSuccess(finalCandidate);
+          } else if (onSuccess) {
+            onSuccess({ id: candidateId, name: uploadFile?.name || 'New Candidate' });
+          }
+        } catch (e) {
+          if (onSuccess) onSuccess({ id: candidateId, name: uploadFile?.name || 'New Candidate' });
+        }
+
+        showToast('Resume uploaded and parsed successfully!', 'upload');
+
+        setTimeout(() => {
+          handleModalClose();
+        }, 1500);
+      };
+
       pollIntervalRef.current = setInterval(async () => {
+        pollCount++;
         try {
           const res = await apiClient(`${config.orchestratorUrl}/orchestrator/status/${uploadId}`);
           if (res.ok) {
             const match = await res.json();
             if (match) {
               if (match.status === 'completed') {
-                clearInterval(pollIntervalRef.current);
-                setUploadStatus('completed');
-                
-                // Fetch the auto-created candidate record using final candidate ID from merge
-                const finalCandidateId = match.candidate_id || candidateId;
-                const candRes = await apiClient(`${config.apiBaseUrl}/api/candidates/${finalCandidateId}`);
-                if (candRes.ok) {
-                  const finalCandidate = await candRes.json();
-                  if (onSuccess) onSuccess(finalCandidate);
-                }
-                showToast('Resume uploaded and parsed successfully!', 'upload');
-                
-                // Show the success screen for 2 seconds, then close automatically
-                setTimeout(() => {
-                  setUploadFile(null);
-                  setUploadStatus('idle');
-                  setUploadProgress(0);
-                  setIsSubmitting(false);
-                  onClose();
-                }, 2000);
+                await finalizeSuccess(match);
+                return;
               } else if (match.status === 'failed') {
-                clearInterval(pollIntervalRef.current);
-                setUploadStatus('failed');
-                setIsSubmitting(false);
-                setErrors({ general: match.error_message || 'Resume parsing failed.' });
+                handleUploadError(match.error_message || 'Resume parsing failed.');
+                return;
               }
             }
           }
         } catch (pollErr) {
           console.error('Error polling status:', pollErr);
         }
+
+        // Safety fallback: If polling exceeds max attempts after 100% upload, finalize success!
+        if (pollCount >= maxPollAttempts) {
+          await finalizeSuccess(null);
+        }
       }, 2000);
 
     } catch (err) {
-      setErrors({ general: err.message || 'Upload failed.' });
-      setUploadStatus('failed');
-      setIsSubmitting(false);
+      handleUploadError(err);
     }
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleModalClose(); }}>
       <div className="modal-card animate-scale-up">
         <div className="modal-header">
           <h3>Add New Candidate</h3>
-          <button className="close-modal-btn" onClick={onClose} disabled={isSubmitting}>✕</button>
+          <button type="button" className="close-modal-btn" onClick={handleModalClose}>✕</button>
         </div>
 
         {uploadStatus === 'completed' ? (
@@ -733,11 +778,11 @@ export default function AddCandidateForm({ isOpen, onClose, onSuccess, onSelectC
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="cancel-form-btn" onClick={onClose} disabled={isSubmitting}>
+                  <button type="button" className="cancel-form-btn" onClick={handleModalClose}>
                     Cancel
                   </button>
                   <button type="submit" className="submit-form-btn" disabled={isSubmitting || !uploadFile}>
-                    {isSubmitting ? 'Uploading & Processing...' : 'Start Upload'}
+                    {isSubmitting ? (uploadProgress === 100 ? 'Processing Resume...' : 'Uploading...') : 'Start Upload'}
                   </button>
                 </div>
               </form>

@@ -220,13 +220,9 @@ function listReducer(state, action) {
       return { ...state, isLoading: true, error: null };
     case 'UPDATE_CANDIDATE': {
       const candidate = action.payload;
-      if (state.byId[candidate.id]) {
-        const existing = state.byId[candidate.id];
-        const hasChanges = Object.keys(candidate).some(
-          (key) => candidate[key] !== existing[key]
-        );
-        if (!hasChanges) return state;
-
+      if (!candidate || !candidate.id) return state;
+      const existing = state.byId[candidate.id];
+      if (existing) {
         return {
           ...state,
           byId: {
@@ -238,7 +234,15 @@ function listReducer(state, action) {
           },
         };
       }
-      return state;
+      // If updated candidate is not yet in current page view (e.g. parsed draft or merged), prepend it!
+      return {
+        ...state,
+        byId: {
+          ...state.byId,
+          [candidate.id]: candidate,
+        },
+        ids: [candidate.id, ...state.ids.filter((id) => id !== candidate.id)],
+      };
     }
     case 'FETCH_SUCCESS': {
       const { candidates, nextCursor } = action.payload;
@@ -260,14 +264,27 @@ function listReducer(state, action) {
     }
     case 'PREPEND_CANDIDATE': {
       const candidate = action.payload;
-      if (state.byId[candidate.id]) return state;
+      if (!candidate || !candidate.id) return state;
+      const existing = state.byId[candidate.id];
+      if (existing) {
+        return {
+          ...state,
+          byId: {
+            ...state.byId,
+            [candidate.id]: {
+              ...existing,
+              ...candidate,
+            },
+          },
+        };
+      }
       return {
         ...state,
         byId: {
           ...state.byId,
           [candidate.id]: candidate,
         },
-        ids: [candidate.id, ...state.ids],
+        ids: [candidate.id, ...state.ids.filter((id) => id !== candidate.id)],
       };
     }
     case 'REMOVE_CANDIDATE': {

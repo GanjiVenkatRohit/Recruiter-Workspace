@@ -21,6 +21,16 @@ const logger = pino({ level: config.logLevel });
 const getOrchestrator = () => require('../orchestrator');
 const getEventSystem  = () => require('../eventSystem');
 
+function formatFallbackName(fileName) {
+  if (!fileName) return 'Unknown — please review';
+  let clean = fileName.replace(/\.[^/.]+$/, '').replace(/^[a-f0-9-]{36}_/i, '');
+  clean = clean.replace(/[-_]/g, ' ').replace(/\b(resume|cv|data engineer|software engineer|developer|profile|biodata)\b/gi, '').trim();
+  if (clean.length >= 2) {
+    return clean.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  }
+  return 'Unknown — please review';
+}
+
 processingQueue.process(async (job) => {
   const startTime = Date.now();
   const { uploadId, candidateId, fileName, filePath } = job.data;
@@ -198,7 +208,7 @@ processingQueue.process(async (job) => {
                version = version + 1, updated_at = NOW()
            WHERE id = $9`,
           [
-            parsed.name?.value || 'Unknown — please review',
+            parsed.name?.value || formatFallbackName(fileName),
             parsed.email?.value || `noreply_${uploadId}@review.local`,
             parsed.phone?.value || null,
             parsed.location?.value || null,
