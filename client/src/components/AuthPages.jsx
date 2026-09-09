@@ -5,7 +5,7 @@ import config from '../config';
 import { setToken } from '../auth';
 import { apiClient } from '../apiClient';
 import { showToast } from '../utils/toast';
-import { ShaderBackground } from './ShaderBackground';
+import GradientWaves from './GradientWaves';
 import './AuthPages.css';
 
 export function LoginPage() {
@@ -54,7 +54,28 @@ export function LoginPage() {
 
   return (
     <div className="auth-page-container">
-      <ShaderBackground className="auth-shader-canvas" />
+      <GradientWaves
+        horizonColor="#5227FF"
+        waveColor="#FF9FFC"
+        crestColor="#FFFFFF"
+        speed={0.4}
+        amplitude={2.5}
+        waveScale={0.6}
+        waveRatio={0.9}
+        swell={35}
+        turbulence={20}
+        tilt={1.11}
+        zoom={1}
+        height={5.5}
+        fogDepth={15}
+        detail="medium"
+        brightness={1}
+        opacity={1}
+        mouseInteraction
+        parallaxStrength={0.5}
+        grain
+        grainIntensity={0.05}
+      />
       <div className="auth-glass-card animate-scale-up">
         <div className="auth-header-centered">
           <div className="auth-logo-badge">
@@ -169,7 +190,28 @@ export function RegisterPage() {
 
   return (
     <div className="auth-page-container">
-      <ShaderBackground className="auth-shader-canvas" />
+      <GradientWaves
+        horizonColor="#5227FF"
+        waveColor="#FF9FFC"
+        crestColor="#FFFFFF"
+        speed={0.4}
+        amplitude={2.5}
+        waveScale={0.6}
+        waveRatio={0.9}
+        swell={35}
+        turbulence={20}
+        tilt={1.11}
+        zoom={1}
+        height={5.5}
+        fogDepth={15}
+        detail="medium"
+        brightness={1}
+        opacity={1}
+        mouseInteraction
+        parallaxStrength={0.5}
+        grain
+        grainIntensity={0.05}
+      />
       <div className="auth-glass-card animate-scale-up">
         <div className="auth-header-centered">
           <div className="auth-logo-badge">
